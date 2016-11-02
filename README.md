@@ -1,0 +1,1 @@
+# vscode-power-mode
