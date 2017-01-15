@@ -1,30 +1,70 @@
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
 let vscode = require('vscode');
 
-// this method is called when your extension is activated
-// your extension is activated the very first time the command is executed
 function activate(context) {
 
-    // Use the console to output diagnostic information (console.log) and errors (console.error)
-    // This line of code will only be executed once when your extension is activated
     console.log('Congratulations, your extension "vscode-power-mode" is now active!');
 
-    // The command has been defined in the package.json file
-    // Now provide the implementation of the command with  registerCommand
-    // The commandId parameter must match the command field in package.json
-    let disposable = vscode.commands.registerCommand('extension.sayHello', function () {
-        // The code you place here will be executed every time your command is executed
+    let charCounter = new CharCounter();
 
-        // Display a message box to the user
-        vscode.window.showInformationMessage('Hello World!');
+    let disposable = vscode.commands.registerCommand('extension.activatePowerMode', function () {
+        // var editor = vscode.window.activeTextEditor;
+        // if (!editor) {
+        //     return;
+        // }
+
+        // var selection = editor.selection;
+        // var text = editor.document.getText(selection);
+
+        // vscode.window.showInformationMessage('Selected characters: ' + text.length);     
+
+        charCounter.updateCharCount();
     });
 
+    context.subscriptions.push(charCounter);
     context.subscriptions.push(disposable);
 }
 exports.activate = activate;
 
-// this method is called when your extension is deactivated
 function deactivate() {
 }
 exports.deactivate = deactivate;
+
+var CharCounter = (function () {
+    function CharCounter() {
+    }
+    CharCounter.prototype.updateCharCount = function () {
+        // Create as needed
+        if (!this._statusBarItem) {
+            this._statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);
+        }
+        // Get the current text editor
+        var editor = vscode.window.activeTextEditor;
+        if (!editor) {
+            this._statusBarItem.hide();
+            return;
+        }
+        var doc = editor.document;
+
+        if (doc.languageId === "plaintext") {
+            var charCount = this._getCharCount(doc);
+            // Update the status bar
+            this._statusBarItem.text = charCount !== 1 ? charCount + " Characters" : '1 Character';
+            this._statusBarItem.show();
+        }
+        else {
+            this._statusBarItem.hide();
+        }
+    };
+    CharCounter.prototype._getCharCount = function (doc) {
+        var docContent = doc.getText();
+        var charCount = 0;
+        if (docContent != "") {
+            charCount = docContent.length;
+        }
+        return charCount;
+    };
+    CharCounter.prototype.dispose = function () {
+        this._statusBarItem.dispose();
+    };
+    return CharCounter;
+}());
