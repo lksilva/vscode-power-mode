@@ -5,23 +5,11 @@ function activate(context) {
     console.log('Congratulations, your extension "vscode-power-mode" is now active!');
 
     let charCounter = new CharCounter();
+    let controller = new CharCounterController(charCounter);
 
-    let disposable = vscode.commands.registerCommand('extension.activatePowerMode', function () {
-        // var editor = vscode.window.activeTextEditor;
-        // if (!editor) {
-        //     return;
-        // }
-
-        // var selection = editor.selection;
-        // var text = editor.document.getText(selection);
-
-        // vscode.window.showInformationMessage('Selected characters: ' + text.length);     
-
-        charCounter.updateCharCount();
-    });
-
+    context.subscriptions.push(controller);
     context.subscriptions.push(charCounter);
-    context.subscriptions.push(disposable);
+
 }
 exports.activate = activate;
 
@@ -33,11 +21,11 @@ var CharCounter = (function () {
     function CharCounter() {
     }
     CharCounter.prototype.updateCharCount = function () {
-        // Create as needed
+
         if (!this._statusBarItem) {
             this._statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);
         }
-        // Get the current text editor
+
         var editor = vscode.window.activeTextEditor;
         if (!editor) {
             this._statusBarItem.hide();
@@ -47,7 +35,6 @@ var CharCounter = (function () {
 
         if (doc.languageId === "plaintext") {
             var charCount = this._getCharCount(doc);
-            // Update the status bar
             this._statusBarItem.text = charCount !== 1 ? charCount + " Characters" : '1 Character';
             this._statusBarItem.show();
         }
@@ -67,4 +54,26 @@ var CharCounter = (function () {
         this._statusBarItem.dispose();
     };
     return CharCounter;
+}());
+
+var CharCounterController = (function () {
+    function CharCounterController(charCounter) {
+        this._charCounter = charCounter;
+        this._charCounter.updateCharCount();
+
+        var subscriptions = [];
+
+        vscode.window.onDidChangeTextEditorSelection(this._onEvent, this, subscriptions);
+        vscode.window.onDidChangeActiveTextEditor(this._onEvent, this, subscriptions);
+
+        this._charCounter.updateCharCount();
+        this._disposable = vscode.Disposable.from.apply(vscode.Disposable, subscriptions);
+    }
+    CharCounterController.prototype.dispose = function () {
+        this._disposable.dispose();
+    };
+    CharCounterController.prototype._onEvent = function () {
+        this._charCounter.updateCharCount();
+    };
+    return CharCounterController;
 }());
